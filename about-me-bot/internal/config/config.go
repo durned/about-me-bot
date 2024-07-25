@@ -1,7 +1,9 @@
 package config
 
 import (
-	"log"
+	"context"
+
+	l "about-me-bot/internal/logger"
 
 	"github.com/caarlos0/env"
 	"github.com/joho/godotenv"
@@ -16,13 +18,15 @@ type Config struct {
 var BotCfg Config
 
 func Load() {
+	ctx := context.Background()
+
 	BotCfg = Config{}
 
 	if err := godotenv.Load(); err != nil {
-		log.Fatal("error loading environmental values")
+		l.SimpleLogger.Log(ctx, l.LevelFatal, "error loading environmental values")
 	}
 
 	if errParse := env.Parse(&BotCfg); errParse != nil {
-		log.Fatalf("error parsing environmental values into a struct.")
+		l.SimpleLogger.Log(ctx, l.LevelFatal, "error parsing environmental values into a struct.")
 	}
 }

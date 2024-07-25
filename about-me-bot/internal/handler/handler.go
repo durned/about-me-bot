@@ -1,8 +1,9 @@
 package handler
 
 import (
-	"log"
+	"fmt"
 
+	l "about-me-bot/internal/logger"
 	"about-me-bot/internal/models"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -35,9 +36,10 @@ func CreateMsg(m *tgbotapi.Message, text string, edit bool, markUp *tgbotapi.Inl
 func HandleUpdate(update tgbotapi.Update) tgbotapi.Chattable {
 	switch {
 	case update.CallbackQuery != nil:
+		l.SimpleLogger.Info(fmt.Sprintf("[@%s]: pressed %s button", update.CallbackQuery.From.UserName, update.CallbackQuery.Data))
 		return handleCallbackQuery(update.CallbackQuery)
 	case update.Message != nil:
-		log.Printf("[@%s]: %s", update.Message.From.UserName, update.Message.Text)
+		l.SimpleLogger.Info(fmt.Sprintf("[@%s]: %s", update.Message.From.UserName, update.Message.Text))
 		return handleMessage(update.Message)
 	}
 
