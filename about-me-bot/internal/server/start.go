@@ -3,11 +3,12 @@ package server
 import (
 	"bufio"
 	"context"
-	"log"
+	"fmt"
 	"os"
 
 	cfg "about-me-bot/internal/config"
 	"about-me-bot/internal/handler"
+	l "about-me-bot/internal/logger"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -27,7 +28,9 @@ func (b *Bot) receiveUpdates(ctx context.Context, updates tgbotapi.UpdatesChanne
 		// receive an update from updates channel and then handle it
 		case update := <-updates:
 			if _, err := b.API.Send(handler.HandleUpdate(update)); err != nil {
-				log.Printf("error sending a message: %s", err.Error())
+				l.SimpleLogger.Error(fmt.Sprintf("could not send a message to @%s: %s", update.Message.From.UserName, err.Error()))
+			} else {
+				l.SimpleLogger.Info("successfully handled an update")
 			}
 		}
 	}
@@ -35,7 +38,7 @@ func (b *Bot) receiveUpdates(ctx context.Context, updates tgbotapi.UpdatesChanne
 
 func Run() {
 	if !(len(cfg.BotCfg.Token) > 0) {
-		log.Fatal("bot token has not been initialized")
+		l.SimpleLogger.Log(context.Background(), l.LevelFatal, "bot token has not been initialized")
 	}
 
 	var (
@@ -48,20 +51,20 @@ func Run() {
 
 	myBot.API, newBotErr = tgbotapi.NewBotAPI(cfg.BotCfg.Token)
 	if newBotErr != nil {
-		log.Fatalf("error creating a new bot API: %s", newBotErr.Error())
+		l.SimpleLogger.Log(ctx, l.LevelFatal, fmt.Sprintf("error creating a new bot API: %s", newBotErr.Error()))
 	}
 
 	u.Timeout = cfg.BotCfg.UpdTimeout
 	updates, err := myBot.API.GetUpdatesChan(u)
 	if err != nil {
-		log.Fatalf("error getting updates: %v", err)
+		l.SimpleLogger.Log(ctx, l.LevelFatal, fmt.Sprintf("error getting updates: %s", err.Error()))
 	}
 
 	// myBot.API.Debug = false; goes to false by default
 	go myBot.receiveUpdates(ctx, updates)
-	log.Printf("Authorized as @%s", myBot.API.Self.UserName)
+	l.SimpleLogger.Info(fmt.Sprintf("Authorized as @%s", myBot.API.Self.UserName))
 
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
-	log.Print("Pressed Enter key. Exiting.")
+	l.SimpleLogger.Info("Pressed Enter key. Exiting.")
 	cancel()
 }
