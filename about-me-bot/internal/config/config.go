@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	_ "log"
 
 	l "about-me-bot/internal/logger"
 
@@ -9,24 +10,45 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type Config struct {
-	Token      string `env:"TELEGRAM_SECRET"`
-	UpdOffset  int    `env:"UPDATE_OFFSET"`
-	UpdTimeout int    `env:"UPDATE_TIMEOUT"`
+type Holidays struct {
+	APIUrl   string `env:"HOLIDAYS_API_URL"`
+	APIKey   string `env:"HOLIDAYS_API_KEY"`
+	Endpoint string
 }
 
-var BotCfg Config
+type Config struct {
+	Token      string `env:"TELEGRAM_BOT_TOKEN"`
+	UpdOffset  int    `env:"UPDATE_OFFSET"`
+	UpdTimeout int    `env:"UPDATE_TIMEOUT"`
+
+	Holidays Holidays
+}
+
+var (
+	HDayCfg Holidays
+	BotCfg  Config
+)
 
 func Load() {
 	ctx := context.Background()
-
-	BotCfg = Config{}
 
 	if err := godotenv.Load(); err != nil {
 		l.SimpleLogger.Log(ctx, l.LevelFatal, "error loading environmental values")
 	}
 
-	if errParse := env.Parse(&BotCfg); errParse != nil {
-		l.SimpleLogger.Log(ctx, l.LevelFatal, "error parsing environmental values into a struct.")
+	if err := env.Parse(&HDayCfg); err != nil {
+		l.SimpleLogger.Log(ctx, l.LevelFatal, "error loading environmental values into the Holidays struct.")
+	}
+
+	HDayCfg.Endpoint = HDayCfg.APIUrl + HDayCfg.APIKey
+
+	if err := env.Parse(&BotCfg); err != nil {
+		l.SimpleLogger.Log(ctx, l.LevelFatal, "error loading environmental values into the Bot struct.")
+	}
+
+	BotCfg.Holidays = HDayCfg
+
+	if !(len(BotCfg.Token) > 0) || !(len(BotCfg.Holidays.APIUrl) > 0) || !(len(BotCfg.Holidays.APIKey) > 0) {
+		l.SimpleLogger.Log(ctx, l.LevelFatal, "error parsing environmental values.")
 	}
 }

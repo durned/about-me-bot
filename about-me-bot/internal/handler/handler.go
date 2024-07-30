@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 
+	"about-me-bot/external/holidays"
 	l "about-me-bot/internal/logger"
 	"about-me-bot/internal/models"
 
@@ -68,9 +69,11 @@ func handleCommand(m *tgbotapi.Message) tgbotapi.Chattable {
 	case "/help":
 		return CreateMsg(m, models.HelpText, false, &models.HelpMarkup, true)
 	case "/about":
-		return CreateMsg(m, models.AboutText, false, &models.AboutMarkup, true)
+		return CreateMsg(m, models.AboutText, false, &models.BackToHelpMarkup, true)
 	case "/links":
-		return CreateMsg(m, models.LinksText, false, &models.LinksMarkup, true)
+		return CreateMsg(m, models.LinksText, false, &models.BackToHelpMarkup, true)
+	case "/holidays":
+		return CreateMsg(m, models.HolidaysText, false, &models.HolidaysMarkup, true)
 	}
 	return CreateMsg(m, models.UnknownCommand, false, &tgbotapi.InlineKeyboardMarkup{}, false)
 }
@@ -81,12 +84,26 @@ func handleCallbackQuery(query *tgbotapi.CallbackQuery) tgbotapi.Chattable {
 		helpMessage := tgbotapi.Message{Chat: &tgbotapi.Chat{ID: query.Message.Chat.ID}, Text: "/help"}
 		return handleCommand(&helpMessage)
 	case "about":
-		return CreateMsg(query.Message, models.AboutText, true, &models.AboutMarkup, true)
+		return CreateMsg(query.Message, models.AboutText, true, &models.BackToHelpMarkup, true)
 	case "links":
-		return CreateMsg(query.Message, models.LinksText, true, &models.LinksMarkup, true)
+		return CreateMsg(query.Message, models.LinksText, true, &models.BackToHelpMarkup, true)
 	case "back":
 		return CreateMsg(query.Message, models.HelpText, true, &models.HelpMarkup, true)
+	case "holidays", "holidayBack":
+		return CreateMsg(query.Message, models.HolidaysText, true, &models.HolidaysMarkup, true)
 	}
 
-	return nil
+	_, exi := holidays.SupportedCountries[query.Data]
+	fail := CreateMsg(query.Message, models.CallbackQueryFail, false, &tgbotapi.InlineKeyboardMarkup{}, false) // nil or a message with an empty string as text will cause a panic
+
+	if exi {
+		hDay, err := holidays.Holiday(query.Data)
+		if err != nil {
+			l.SimpleLogger.Error(err.Error())
+			return fail
+		}
+		return CreateMsg(query.Message, hDay, true, &models.BackToHolidaysMarkup, true)
+	}
+
+	return fail
 }
