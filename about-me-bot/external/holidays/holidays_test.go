@@ -90,7 +90,7 @@ func TestHoliday(t *testing.T) {
 			"no GET request made",
 			args{"LV"},
 			"",
-			fmt.Errorf("could not make a GET request: Get \"%s\": %s", CountryKey+"LV"+DateKey, myError),
+			fmt.Errorf("could not make a GET request: Get \"%s\": %s", fmt.Sprint(CountryKey, "LV", DateKey), myError),
 			&http.Client{
 				Transport: MyFakeService(func(*http.Request) (*http.Response, error) {
 					return &http.Response{
@@ -166,7 +166,7 @@ func TestHoliday(t *testing.T) {
 	for i := range tests {
 		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
-			MyClient = tt.client
+			HolidaysClient = tt.client
 			holiday, err := Holiday(tt.args.country)
 			assertMulti.Equal(tt.want, holiday)
 			assertMulti.Equal(tt.wantErr, err)

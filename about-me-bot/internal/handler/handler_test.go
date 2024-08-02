@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"about-me-bot/external/holidays"
+	"about-me-bot/external/openweather"
 	"about-me-bot/internal/models"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -51,11 +52,11 @@ func TestHandleMessages(t *testing.T) {
 			CreateMsg(msgHelper(""), models.WrongFmt, false, dummy, false),
 		},
 		{
-			"send commands",
+			"send commands or cities",
 			args{tgbotapi.Update{
-				Message: msgHelper("hey"),
+				Message: msgHelper("["),
 			}},
-			CreateMsg(msgHelper("hey"), models.SendCommands, false, dummy, false),
+			CreateMsg(msgHelper("["), models.UndefinedMsg, false, dummy, false),
 		},
 		{
 			"unknown command",
@@ -65,28 +66,28 @@ func TestHandleMessages(t *testing.T) {
 			CreateMsg(msgHelper("/tryme"), models.UnknownCommand, false, dummy, false),
 		},
 		{
-			"start",
+			"/start",
 			args{tgbotapi.Update{
 				Message: msgHelper("/start"),
 			}},
 			CreateMsg(msgHelper("/start"), models.WelcomeText, false, &models.StartMarkup, true),
 		},
 		{
-			"help",
+			"/help",
 			args{tgbotapi.Update{
 				Message: msgHelper("/help"),
 			}},
 			CreateMsg(msgHelper("/help"), models.HelpText, false, &models.HelpMarkup, true),
 		},
 		{
-			"about",
+			"/about",
 			args{tgbotapi.Update{
 				Message: msgHelper("/about"),
 			}},
 			CreateMsg(msgHelper("/about"), models.AboutText, false, &models.BackToHelpMarkup, true),
 		},
 		{
-			"links",
+			"/links",
 			args{tgbotapi.Update{
 				Message: msgHelper("/links"),
 			}},
@@ -100,6 +101,9 @@ func TestHandleMessages(t *testing.T) {
 			CreateMsg(msgHelper("/holidays"), models.HolidaysText, false, &models.HolidaysMarkup, true),
 		},
 	}
+
+	openweather.GeocodeClient = openweather.NoMatchesFoundClient
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -116,7 +120,7 @@ func TestHandleCallbackQueries(t *testing.T) {
 		update tgbotapi.Update
 	}
 
-	holidays.MyClient = holidays.LatvianHolidaysClient
+	holidays.HolidaysClient = holidays.LatvianHolidaysClient
 	LVHolidays, err := holidays.Holiday("LV")
 	if err != nil {
 		log.Fatal(err)
@@ -199,7 +203,7 @@ func TestHandleCallbackQueries(t *testing.T) {
 					CallbackQuery: cQueryHelper("COUNTRY"),
 				},
 			},
-			CreateMsg(msgHelper(""), models.CallbackQueryFail, false, &tgbotapi.InlineKeyboardMarkup{}, false),
+			CreateMsg(msgHelper(""), models.APIFail, false, &tgbotapi.InlineKeyboardMarkup{}, false),
 		},
 	}
 	for _, tt := range tests {

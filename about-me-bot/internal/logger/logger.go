@@ -32,7 +32,7 @@ func (h *CustomHandler) Handle(ctx context.Context, r slog.Record) error {
 	var (
 		prefix    string
 		location  string
-		timestamp string = "[" + r.Time.Format("2006-01-02 15:04:05.000") + "]"
+		timestamp string = fmt.Sprint("[", r.Time.Format("2006-01-02 15:04:05.000"), "]")
 		trace            = fmt.Sprintf("[trace-id:%s]", uuid.New().String())
 	)
 	_, file, line, ok := runtime.Caller(3)
@@ -50,9 +50,9 @@ func (h *CustomHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	if file != "unknown" {
 		i := strings.Index(file, "about-me-bot")
-		location = "./" + file[i:] + ":" + fmt.Sprint(line)
+		location = fmt.Sprint("./", file[i:], ":", fmt.Sprint(line))
 	} else {
-		location = "./" + file + ":" + fmt.Sprint(line)
+		location = fmt.Sprint("./", file, ":", fmt.Sprint(line))
 	}
 
 	switch r.Level {

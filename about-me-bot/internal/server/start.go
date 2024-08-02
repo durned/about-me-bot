@@ -13,11 +13,9 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-type (
-	Bot struct {
-		API *tgbotapi.BotAPI
-	}
-)
+type Bot struct {
+	API *tgbotapi.BotAPI
+}
 
 func (b *Bot) receiveUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel) {
 	for {
@@ -37,10 +35,6 @@ func (b *Bot) receiveUpdates(ctx context.Context, updates tgbotapi.UpdatesChanne
 }
 
 func Run() {
-	if !(len(cfg.BotCfg.Token) > 0) {
-		l.SimpleLogger.Log(context.Background(), l.LevelFatal, "bot token has not been initialized")
-	}
-
 	var (
 		myBot     Bot
 		newBotErr error
