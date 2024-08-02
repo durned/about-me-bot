@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"about-me-bot/external/holidays"
+	weather "about-me-bot/external/openweather"
 	l "about-me-bot/internal/logger"
 	"about-me-bot/internal/models"
 
@@ -13,6 +14,16 @@ import (
 const (
 	Markdown string = "Markdown"
 )
+
+// all formatting must be done with HTMl in text
+func HTMLImgAppender(m *tgbotapi.Message, text string, url string) tgbotapi.Chattable {
+	text += fmt.Sprint("<a href=\"", url, "\">", "\u200e", "</a>")
+
+	msg := tgbotapi.NewMessage(m.Chat.ID, text)
+	msg.ParseMode = "HTML"
+
+	return msg
+}
 
 func CreateMsg(m *tgbotapi.Message, text string, edit bool, markUp *tgbotapi.InlineKeyboardMarkup, applyMarkup bool) tgbotapi.Chattable {
 	if edit {
@@ -53,9 +64,29 @@ func handleMessage(m *tgbotapi.Message) tgbotapi.Chattable {
 	if len(m.Text) > 0 {
 		if m.Text[0] == '/' {
 			return handleCommand(m)
-		} else {
-			return CreateMsg(m, models.SendCommands, false, dummy, false)
 		}
+
+		coords, err := weather.Geocode(m.Text)
+		switch err {
+		case weather.ErrNoMatchesFound:
+			return CreateMsg(m, models.UndefinedMsg, false, dummy, false)
+		case nil:
+			break
+		default:
+			return CreateMsg(m, models.APIFail, false, dummy, false)
+		}
+
+		wForecast, wIconUrl, err := weather.Forecast(coords)
+		switch err {
+		case weather.ErrNoData:
+			return CreateMsg(m, weather.ErrNoData.Error(), false, dummy, false)
+		case nil:
+			break
+		default:
+			return CreateMsg(m, models.APIFail, false, dummy, false)
+		}
+
+		return HTMLImgAppender(m, wForecast, wIconUrl)
 	}
 
 	return CreateMsg(m, models.WrongFmt, false, dummy, false)
@@ -94,7 +125,7 @@ func handleCallbackQuery(query *tgbotapi.CallbackQuery) tgbotapi.Chattable {
 	}
 
 	_, exi := holidays.SupportedCountries[query.Data]
-	fail := CreateMsg(query.Message, models.CallbackQueryFail, false, &tgbotapi.InlineKeyboardMarkup{}, false) // nil or a message with an empty string as text will cause a panic
+	fail := CreateMsg(query.Message, models.APIFail, false, &tgbotapi.InlineKeyboardMarkup{}, false) // nil or a message with an empty string as text will cause a panic
 
 	if exi {
 		hDay, err := holidays.Holiday(query.Data)

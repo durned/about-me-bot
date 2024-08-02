@@ -11,7 +11,7 @@ import (
 	l "about-me-bot/internal/logger"
 )
 
-var MyClient = http.DefaultClient
+var HolidaysClient = http.DefaultClient
 
 func Holiday(country string) (string, error) {
 	if len(country) != 2 {
@@ -22,12 +22,12 @@ func Holiday(country string) (string, error) {
 
 	l.SimpleLogger.Info("making a request to the Holidays API")
 
-	link := cfg.BotCfg.Holidays.Endpoint + CountryKey + country + DateKey
+	link := fmt.Sprint(cfg.BotCfg.Holidays.Endpoint, CountryKey, country, DateKey)
 
 	// Multiple holidays on the same day:
-	// link = cfg.BotCfg.HolidaysEndpoint + CountryKey + "LV" + "&year=2024&month=05&day=01"
+	// link = fmt.Sprint(cfg.BotCfg.HolidaysEndpoint, CountryKey, "LV", "&year=2024&month=05&day=01")
 
-	resp, err := MyClient.Get(link)
+	resp, err := HolidaysClient.Get(link)
 	if err != nil {
 		reqErr := "could not make a GET request: " + err.Error()
 		l.SimpleLogger.Error(reqErr)
@@ -40,7 +40,7 @@ func Holiday(country string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body) // probably harder to deliberately make it than to get in real world
+	body, err := io.ReadAll(resp.Body) // probably harder to deliberately make it fail here than to get it to fail in real world
 	if err != nil {
 		readErr := "could not read the response body: " + err.Error()
 		l.SimpleLogger.Error(readErr)
