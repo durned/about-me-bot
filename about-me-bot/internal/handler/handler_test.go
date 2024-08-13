@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"about-me-bot/external/holidays"
 	"about-me-bot/external/openweather"
@@ -32,6 +35,36 @@ func cQueryHelper(data string) *tgbotapi.CallbackQuery {
 	}
 }
 
+func TestHandleSubscription(t *testing.T) {
+	type args struct {
+		msg *tgbotapi.Message
+	}
+
+	tests := []struct {
+		args args
+		want string
+	}{
+		{
+			args: args{msgHelper("/subscribe I want this city")},
+			want: models.SubHandleArgsCount,
+		},
+		{
+			args: args{msgHelper("/subscribe 69:Yin Riga")},
+			want: models.SubHandleTimeFmt,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+
+			if got := HandleSubscription(tt.args.msg); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("HandleSubscription() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestHandleMessages(t *testing.T) {
 	dummy := &tgbotapi.InlineKeyboardMarkup{}
 
@@ -44,6 +77,34 @@ func TestHandleMessages(t *testing.T) {
 		args args
 		want tgbotapi.Chattable
 	}{
+		{
+			"neither msg nor upd",
+			args{tgbotapi.Update{
+				ChannelPost: msgHelper(""),
+			}},
+			nil,
+		},
+		{
+			"/weather",
+			args{tgbotapi.Update{
+				Message: msgHelper("/weather"),
+			}},
+			CreateMsg(msgHelper("/weather"), models.WeatherText, false, &models.BackToHelpMarkup, true),
+		},
+		{
+			"/subscribe",
+			args{tgbotapi.Update{
+				Message: msgHelper("/subscribe"),
+			}},
+			CreateMsg(msgHelper("/subscribe"), models.BeginSubscriptionText, false, dummy, false),
+		},
+		{
+			"/status",
+			args{tgbotapi.Update{
+				Message: msgHelper("/status"),
+			}},
+			CreateMsg(msgHelper("/status"), models.SusbcriptionStatusText, false, &models.SusbcriptionStatusMarkup, true),
+		},
 		{
 			"wrong fmt",
 			args{tgbotapi.Update{
@@ -197,10 +258,37 @@ func TestHandleCallbackQueries(t *testing.T) {
 			CreateMsg(msgHelper(""), LVHolidays, true, &models.BackToHolidaysMarkup, true),
 		},
 		{
-			"definetly a country",
+			"definitely a country",
 			args{
 				tgbotapi.Update{
 					CallbackQuery: cQueryHelper("COUNTRY"),
+				},
+			},
+			CreateMsg(msgHelper(""), models.APIFail, false, &tgbotapi.InlineKeyboardMarkup{}, false),
+		},
+		{
+			"weather",
+			args{
+				tgbotapi.Update{
+					CallbackQuery: cQueryHelper("weather"),
+				},
+			},
+			CreateMsg(msgHelper(""), models.WeatherText, true, &models.WeatherMarkup, true),
+		},
+		{
+			"substatus",
+			args{
+				tgbotapi.Update{
+					CallbackQuery: cQueryHelper("substatus"),
+				},
+			},
+			CreateMsg(msgHelper(""), models.SusbcriptionStatusText, true, &models.SusbcriptionStatusMarkup, true),
+		},
+		{
+			"fail",
+			args{
+				tgbotapi.Update{
+					CallbackQuery: cQueryHelper("known"),
 				},
 			},
 			CreateMsg(msgHelper(""), models.APIFail, false, &tgbotapi.InlineKeyboardMarkup{}, false),
@@ -215,4 +303,19 @@ func TestHandleCallbackQueries(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHTMLImgAppender(t *testing.T) {
+	msg := msgHelper("")
+	text := "append a link to me!"
+	url := "https://example.com/"
+
+	res := HTMLImgAppender(msg, text, url)
+
+	resMsg, ok := res.(tgbotapi.MessageConfig)
+	assert.True(t, ok)
+
+	assert.Equal(t, text+fmt.Sprint("<a href=\"", url, "\">", "\u200e", "</a>"), resMsg.Text)
+	assert.Equal(t, "HTML", resMsg.ParseMode)
+	assert.Equal(t, resMsg.ChatID, msg.Chat.ID)
 }

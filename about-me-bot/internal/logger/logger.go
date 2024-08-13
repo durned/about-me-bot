@@ -35,6 +35,9 @@ func (h *CustomHandler) Handle(ctx context.Context, r slog.Record) error {
 		timestamp string = fmt.Sprint("[", r.Time.Format("2006-01-02 15:04:05.000"), "]")
 		trace            = fmt.Sprintf("[trace-id:%s]", uuid.New().String())
 	)
+	// temporarlyy shortened
+	trace = ""
+
 	_, file, line, ok := runtime.Caller(3)
 	if !ok {
 		SimpleLogger.Error("could not get runtime info on the source")
@@ -48,11 +51,10 @@ func (h *CustomHandler) Handle(ctx context.Context, r slog.Record) error {
 		function = splitFunc[len(splitFunc)-1]
 	*/
 
-	if file != "unknown" {
-		i := strings.Index(file, "about-me-bot")
-		location = fmt.Sprint("./", file[i:], ":", fmt.Sprint(line))
-	} else {
+	if i := strings.Index(file, "about-me-bot"); file == "unknown" || i == -1 {
 		location = fmt.Sprint("./", file, ":", fmt.Sprint(line))
+	} else {
+		location = fmt.Sprint("./", file[i:], ":", fmt.Sprint(line))
 	}
 
 	switch r.Level {

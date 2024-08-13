@@ -1,10 +1,8 @@
 package server
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"os"
 
 	cfg "about-me-bot/internal/config"
 	"about-me-bot/internal/handler"
@@ -17,6 +15,25 @@ type Bot struct {
 	API *tgbotapi.BotAPI
 }
 
+func InitBot() Bot {
+	var (
+		myBot     Bot
+		newBotErr error
+	)
+
+	myBot.API, newBotErr = tgbotapi.NewBotAPI(cfg.Global.TgBot.Token)
+	if newBotErr != nil { // Context with cancel() will not affect this anyway
+		l.SimpleLogger.Log(context.Background(), l.LevelFatal, fmt.Sprintf("error creating a new bot API: %s", newBotErr.Error()))
+	}
+
+	// myBot.API.Debug = false; goes to false by default
+	return myBot
+}
+
+func (b *Bot) MySend(in tgbotapi.Chattable) (tgbotapi.Message, error) {
+	return b.API.Send(in)
+}
+
 func (b *Bot) receiveUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel) {
 	for {
 		select {
@@ -25,7 +42,13 @@ func (b *Bot) receiveUpdates(ctx context.Context, updates tgbotapi.UpdatesChanne
 			return
 		// receive an update from updates channel and then handle it
 		case update := <-updates:
-			if _, err := b.API.Send(handler.HandleUpdate(update)); err != nil {
+			toSend := handler.HandleUpdate(update)
+			if toSend == nil {
+				l.SimpleLogger.Info("update was handled, but nothing was sent")
+				break
+			}
+
+			if _, err := b.MySend(toSend); err != nil {
 				l.SimpleLogger.Error(fmt.Sprintf("could not send a message to @%s: %s", update.Message.From.UserName, err.Error()))
 			} else {
 				l.SimpleLogger.Info("successfully handled an update")
@@ -34,31 +57,17 @@ func (b *Bot) receiveUpdates(ctx context.Context, updates tgbotapi.UpdatesChanne
 	}
 }
 
-func Run() {
-	var (
-		myBot     Bot
-		newBotErr error
-		u         tgbotapi.UpdateConfig = tgbotapi.NewUpdate(cfg.BotCfg.UpdOffset)
-		ctx                             = context.Background()
-	)
-	ctx, cancel := context.WithCancel(ctx)
+func Run(ctx context.Context) {
+	myBot := InitBot()
 
-	myBot.API, newBotErr = tgbotapi.NewBotAPI(cfg.BotCfg.Token)
-	if newBotErr != nil {
-		l.SimpleLogger.Log(ctx, l.LevelFatal, fmt.Sprintf("error creating a new bot API: %s", newBotErr.Error()))
-	}
+	var u tgbotapi.UpdateConfig = tgbotapi.NewUpdate(cfg.Global.TgBot.UpdOffset)
+	u.Timeout = cfg.Global.TgBot.UpdTimeout
 
-	u.Timeout = cfg.BotCfg.UpdTimeout
 	updates, err := myBot.API.GetUpdatesChan(u)
 	if err != nil {
 		l.SimpleLogger.Log(ctx, l.LevelFatal, fmt.Sprintf("error getting updates: %s", err.Error()))
 	}
 
-	// myBot.API.Debug = false; goes to false by default
 	go myBot.receiveUpdates(ctx, updates)
 	l.SimpleLogger.Info(fmt.Sprintf("Authorized as @%s", myBot.API.Self.UserName))
-
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
-	l.SimpleLogger.Info("Pressed Enter key. Exiting.")
-	cancel()
 }

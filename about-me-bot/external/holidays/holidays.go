@@ -22,7 +22,7 @@ func Holiday(country string) (string, error) {
 
 	l.SimpleLogger.Info("making a request to the Holidays API")
 
-	link := fmt.Sprint(cfg.BotCfg.Holidays.Endpoint, CountryKey, country, DateKey)
+	link := fmt.Sprint(cfg.Global.Holidays.Endpoint, CountryKey, country, DateKey)
 
 	// Multiple holidays on the same day:
 	// link = fmt.Sprint(cfg.BotCfg.HolidaysEndpoint, CountryKey, "LV", "&year=2024&month=05&day=01")
