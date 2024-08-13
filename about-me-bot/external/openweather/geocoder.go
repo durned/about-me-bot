@@ -26,7 +26,7 @@ func Geocode(city string) (Coordinates, error) {
 
 	l.SimpleLogger.Info("making a request to the Geocoding API")
 
-	link := fmt.Sprint(cfg.BotCfg.Weather.GeocodingAPIUrl, "q=", city, LimitKey, APIDelim, cfg.BotCfg.Weather.APIKey)
+	link := fmt.Sprint(cfg.Global.Weather.GeocodingAPIUrl, "q=", city, LimitKey, APIDelim, cfg.Global.Weather.APIKey)
 
 	resp, err := GeocodeClient.Get(link)
 	if err != nil {

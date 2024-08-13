@@ -19,7 +19,7 @@ The forecast for today is such:
 🌡️ lowest: <b>%v°C</b>, highest: <b>%v°C</b>.
 Today's weather can be described with this <i>icon</i>:`,
 			c.Name, c.Country, wf.Current.Weather[0].Description, wf.Current.Temperature, wf.Daily[0].Summary, wf.Daily[0].Temp.Min, wf.Daily[0].Temp.Max),
-		fmt.Sprint(config.BotCfg.Weather.IconsUrl, wf.Daily[0].Weather[0].Icon, "@2x.png")
+		fmt.Sprint(config.Global.Weather.IconsUrl, wf.Daily[0].Weather[0].Icon, "@2x.png")
 }
 
 type Coordinates struct {

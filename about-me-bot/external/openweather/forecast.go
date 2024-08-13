@@ -18,7 +18,7 @@ func Forecast(coords Coordinates) (text string, iconLink string, err error) {
 	l.SimpleLogger.Info("making a request to the OpenWeather One Call API")
 
 	link := fmt.Sprintf("%s%s%.2f%s%.2f%s",
-		cfg.BotCfg.Weather.ForecastAPIUrl,
+		cfg.Global.Weather.ForecastAPIUrl,
 		LatKey, coords.Latitude, LonKey, coords.Longitude,
 		fmt.Sprint(ExcludeKey, UnitsKey, LangKey,
 			APIDelim, cfg.WeatherCfg.APIKey))

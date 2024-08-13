@@ -1,0 +1,31 @@
+services:
+  mongo:
+    image: mongo:latest
+    restart: always
+    container_name: mongodb_deployed
+    ports:
+      - "${DB_PORT}:27017" # map the default port inside the container to a port I specified for outside
+    networks:
+      - inner_network
+    volumes:
+      - subs-data:/data/db
+
+  go_app:
+    build:
+      context: ./about-me-bot/..
+      dockerfile: dockerfile
+    container_name: go_app_deployed
+    depends_on:
+      - mongo
+    command: /my-go-app
+    networks:
+      - inner_network
+    environment:
+      - DB_URI=mongodb://mongo:27017
+
+volumes:
+  subs-data:
+    driver: local
+
+networks:
+  inner_network:
