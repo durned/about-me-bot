@@ -22,8 +22,8 @@ type Config struct {
 type TgBot struct {
 	Mode       string `env:"MODE"`
 	Token      string `env:"TELEGRAM_BOT_TOKEN"`
-	UpdOffset  int    `env:"TGBOT_UPDATE_OFFSET"`
-	UpdTimeout int    `env:"TGBOT_UPDATE_TIMEOUT"`
+	UpdOffset  int    `env:"TGBOT_UPDATE_OFFSET" envDefault:"0"`
+	UpdTimeout int    `env:"TGBOT_UPDATE_TIMEOUT" envDefault:"60"`
 }
 
 type Database struct {
@@ -53,7 +53,9 @@ var (
 )
 
 func Load(ctx context.Context) {
-	if err := godotenv.Load(); err != nil {
+	cwd, _ := os.Getwd()
+	l.SimpleLogger.Info(cwd)
+	if err := godotenv.Load("../../configs/.env"); err != nil {
 		l.SimpleLogger.Log(ctx, l.LevelFatal, "error loading env vars")
 	}
 

@@ -3,9 +3,10 @@ FROM golang:latest AS builder
 
 # Create a workdir inside the container
 WORKDIR /app/about-me-bot
-
 # Switch
 WORKDIR /app
+
+COPY ./configs ./configs
 
 # Copy the Go Modules manifests
 COPY ./about-me-bot/go.mod ./about-me-bot/go.sum ./

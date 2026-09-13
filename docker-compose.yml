@@ -1,10 +1,11 @@
 services:
   mongo:
+    container_name: mongodb_deployed
+    env_file: "configs/.env"
     image: mongo:latest
     restart: always
-    container_name: mongodb_deployed
     ports:
-      - "${DB_PORT}:27017" # map the default port inside the container to a port I specified for outside
+      - "${DB_PORT:-27017}:27017"
     networks:
       - inner_network
     volumes:

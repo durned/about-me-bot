@@ -1,2 +1,3 @@
+*.idea
 limited-handler-with-tests/
 *.env
